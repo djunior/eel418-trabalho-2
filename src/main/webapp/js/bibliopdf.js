@@ -6,11 +6,11 @@
 
 var resultadosBusca = [];
 
-function doAjaxRequest(jsonObject,callback){
+function doAjaxRequest(action,jsonObject,callback){
     console.log("doAjaxRequest called!");
     var stringJSON = JSON.stringify(jsonObject);
     var ajaxRequestObj = new XMLHttpRequest();
-    ajaxRequestObj.open("POST", "controller");
+    ajaxRequestObj.open("POST", "controller?action="+action);
     ajaxRequestObj.setRequestHeader("Content-Type","application/json;charset=UTF-8");
     
     // Prepara recebimento da resposta: tipo da resposta JSON!
@@ -29,8 +29,23 @@ function doAjaxRequest(jsonObject,callback){
     ajaxRequestObj.send(stringJSON);
 };
 
+function ReferenciaBibliografica() {
+    return {
+        patrimonio: document.getElementById("idpatrimonio3").value,
+        titulo: document.getElementById("idtitulo3").value,
+        autoria: document.getElementById("idautoria3").value,
+        veiculo: document.getElementById("idveiculo3").value,
+        dataPublicacao: document.getElementById("iddatapublicacao3").value,
+        palchave: document.getElementById("idpalchave3").value
+    };
+};
+
 var setNumberOfResults = function(n) {
     document.getElementById("idNroRows").textContent = n;
+};
+
+var setCatalogMessage = function (m) {
+  document.getElementById("idMsgDialogo3").textContent = m;  
 };
 
 var clearResultList = function() {
@@ -92,11 +107,10 @@ var search = function () {
         palChave: document.getElementById("idpalchave2").value
     };
     console.log("calling doAjaxRequest");
-    doAjaxRequest(requestObj,onSearchResult);
+    doAjaxRequest("search",requestObj,onSearchResult);
 };
 
 var edit = function () {
-    document.getElementById("idpatrimonio3").readOnly = false;
     document.getElementById("idtitulo3").readOnly = false;
     document.getElementById("idautoria3").readOnly = false;
     document.getElementById("idveiculo3").readOnly = false;
@@ -104,14 +118,34 @@ var edit = function () {
     document.getElementById("idpalchave3").readOnly = false;
 };
 
+var onCreateResult = function (result) {
+    document.getElementById("idpatrimonio3").value = result.patrimonio;
+    setCatalogMessage(result.message);
+};
+
+var create = function () {
+    var requestObj = ReferenciaBibliografica();
+    console.log("create: calling doAjaxRequest");
+    doAjaxRequest("create",requestObj,onCreateResult);
+};
+
+var onRemoveResult = function (result) {
+    setCatalogMessage(result.message);
+};
+
+var remove = function () {
+    var requestObj = ReferenciaBibliografica();
+    doAjaxRequest("remove",requestObj,onRemoveResult);
+}
+
 var loadCatalogForReference = function (index) {
     var ref = resultadosBusca[index];
     
     document.getElementById("idpatrimonio3").value = ref.serialno;
     document.getElementById("idtitulo3").value = ref.titulo;
     document.getElementById("idautoria3").value = ref.autoria;
-//    document.getElementById("idveiculo3").value = ref.veiculo;
-//    document.getElementById("iddatapublicacao3").value = ref.titulo;
+    document.getElementById("idveiculo3").value = ref.veiculo;
+    document.getElementById("iddatapublicacao3").value = ref.dataPublicacao;
     document.getElementById("idpalchave3").value = ref.palchave;
     
     goToCatalog();
@@ -172,6 +206,8 @@ var onload = function () {
     document.getElementById("idBuscar").onclick = search;
     document.getElementById("idEditar").onclick = edit;
     document.getElementById("idLimparBusca").onclick = clear;
+    document.getElementById("idSalvarNovo").onclick = create;
+    document.getElementById("idExcluir").onclick = remove;
     
     setNumberOfResults(0);
 };

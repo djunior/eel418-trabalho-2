@@ -5,13 +5,17 @@
  */
 package com.djunior.eel418trabalho2;
 
+import com.djunior.eel418trabalho2.DAO.CatalogDAO;
+import com.djunior.eel418trabalho2.DTO.CreateResponseMessage;
 import com.djunior.eel418trabalho2.DTO.ListaDeReferencias;
 import com.djunior.eel418trabalho2.DTO.ReferenciaBibliografica;
+import com.djunior.eel418trabalho2.DTO.ResponseMessage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
+import java.sql.SQLException;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
@@ -22,14 +26,8 @@ import javax.servlet.http.HttpServletResponse;
 
 public class Controller extends HttpServlet {
 
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        
-        
-        System.out.println("Controller.processRequest called!");
-        // Não é um conjunto de pares nome-valor,
-        // então tem que ler como se fosse um upload de arquivo...
-        BufferedReader br = new BufferedReader(
+    private JsonObject readJSONObject(HttpServletRequest request) throws ServletException, IOException {
+                BufferedReader br = new BufferedReader(
                                   new  InputStreamReader(
                                            request.getInputStream(),"UTF8"));
         String textoDoJson = br.readLine();
@@ -51,17 +49,12 @@ public class Controller extends HttpServlet {
             System.out.println("Caught exception: " + e.getMessage());
             e.printStackTrace();
         }
+        return jsonObjectDeJava;
+    }
+    
+    private String search(JsonObject obj) throws ServletException, IOException {
         
-        
-        System.out.println("Titulo: " + jsonObjectDeJava.getString("titulo"));
-        
-        // Agora é só responder...
-//        RespostaDTO dto = new RespostaDTO();
-//        dto.setCampo1("Servidor recebeu:" 
-//                                          + jsonObjectDeJava.getString("campo1"));
-//        dto.setCampo2("Servidor recebeu:" + jsonObjectDeJava.getString("campo2"));
-//        dto.setCampo3("Servidor recebeu:" + jsonObjectDeJava.getString("campo3"));
-//        dto.setCampo4("Servidor recebeu:" + jsonObjectDeJava.getString("campo4"));
+        System.out.println("Titulo: " + obj.getString("titulo"));
         
         ListaDeReferencias resposta = new ListaDeReferencias();
 
@@ -71,14 +64,78 @@ public class Controller extends HttpServlet {
             ref.setTitulo("Titulo Obra " + (i+1) );
             ref.setAutoria(("David Britto Jr"));
             ref.setPalchave("web programming");
+            ref.setVeiculo("livro");
+            ref.setDataPublicacao("2016-06-24 11:06:13");
             resposta.add(ref);
+        }
+        
+        return resposta.toString();
+    }
+    
+    private String create(JsonObject obj) {
+        
+        ReferenciaBibliografica ref = new ReferenciaBibliografica(obj);
+        
+        try {
+            CatalogDAO catalog = new CatalogDAO();
+            catalog.create(ref);
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return (new CreateResponseMessage(true,"Patrimonio " + ref.getSerialno() + " criado.",ref.getSerialno())).toString();
+    }
+    
+    private String update(JsonObject obj){
+        return "";
+    }
+    
+    private String remove(JsonObject obj) {
+        
+        System.out.println("Controller.remove called!");
+        ReferenciaBibliografica ref = new ReferenciaBibliografica(obj);
+        
+        try {
+            CatalogDAO catalog = new CatalogDAO();
+            System.out.println("Calling CatalogDAO.remove");
+            catalog.remove(ref);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return (new ResponseMessage(true, "Patrimonio " + ref.getSerialno() + " removida com sucesso.")).toString();
+    }
+    
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        System.out.println("Controller.processRequest called!");
+        
+        JsonObject obj = readJSONObject(request);
+        String resposta;
+        String action = request.getParameter("action");
+        switch(action){
+            case "search":
+                resposta = search(obj);
+                break;
+            case "create":
+                resposta = create(obj);
+                break;
+            case "update":
+                resposta = update(obj);
+                break;
+            case "remove":
+                resposta = remove(obj);
+                break;
+            default:
+                resposta = search(obj);
+                break;
         }
         
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        out.print(resposta.toString());
+        out.print(resposta);
         out.flush();
-        
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">

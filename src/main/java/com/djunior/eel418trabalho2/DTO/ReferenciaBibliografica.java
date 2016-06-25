@@ -9,6 +9,8 @@ public class ReferenciaBibliografica implements Serializable{
     private long serialno;
     private String titulo;
     private String autoria;
+    private String veiculo;
+    private String dataPublicacao;
     private String palchave;
 
     public ReferenciaBibliografica() {
@@ -16,10 +18,27 @@ public class ReferenciaBibliografica implements Serializable{
     }
     
     public ReferenciaBibliografica(JsonObject obj) {
-        serialno = (long) obj.getInt("serialno");
-        titulo = obj.getString("titulo");
-        autoria = obj.getString("autoria");
-        palchave = obj.getString("palchave");
+        if (! obj.isNull("patrimonio")){
+            if (! obj.getString("patrimonio").equals(""))
+                serialno = Long.parseLong(obj.getString("patrimonio"));
+            else
+                serialno = 0;
+        }
+        
+        if (! obj.isNull("titulo"))
+            titulo = obj.getString("titulo");
+        
+        if (! obj.isNull("autoria"))
+            autoria = obj.getString("autoria");
+        
+        if (! obj.isNull("palchave"))
+            palchave = obj.getString("palchave");
+        
+        if (! obj.isNull("veiculo"))
+            veiculo = obj.getString("veiculo");
+        
+        if (! obj.isNull("dataPublicacao"))
+            dataPublicacao = obj.getString("dataPublicacao");
     }
     
     public long getSerialno() {
@@ -54,12 +73,30 @@ public class ReferenciaBibliografica implements Serializable{
         this.palchave = palchave;
     }
     
+    public void setVeiculo(String v) {
+        this.veiculo = v;
+    }
+    
+    public String getVeiculo() {
+        return veiculo;
+    }
+    
+    public void setDataPublicacao(String d) {
+        dataPublicacao = d;
+    }
+    
+    public String getDataPublicacao() {
+        return dataPublicacao;
+    }
+    
     public JsonObjectBuilder getJsonObjectBuilder() {
         return Json.createObjectBuilder()
                 .add("serialno", serialno)
                 .add("titulo", titulo)
                 .add("autoria", autoria)
-                .add("palchave", palchave);
+                .add("palchave", palchave)
+                .add("veiculo", veiculo)
+                .add("dataPublicacao", dataPublicacao);
     }
     
     public JsonObject toJSON(){
