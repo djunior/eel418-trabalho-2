@@ -6,16 +6,20 @@
 package com.djunior.eel418trabalho2;
 
 import com.djunior.eel418trabalho2.DAO.CatalogDAO;
+import com.djunior.eel418trabalho2.DAO.SearchDAO;
 import com.djunior.eel418trabalho2.DTO.CreateResponseMessage;
 import com.djunior.eel418trabalho2.DTO.ListaDeReferencias;
 import com.djunior.eel418trabalho2.DTO.ReferenciaBibliografica;
 import com.djunior.eel418trabalho2.DTO.ResponseMessage;
+import com.djunior.eel418trabalho2.DTO.SearchQuery;
+import com.djunior.eel418trabalho2.DTO.SearchResponseMessage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
@@ -54,56 +58,70 @@ public class Controller extends HttpServlet {
     
     private String search(JsonObject obj) throws ServletException, IOException {
         
-        System.out.println("Titulo: " + obj.getString("titulo"));
+        SearchQuery sq = new SearchQuery(obj);
+        ListaDeReferencias lista = new ListaDeReferencias();
+        SearchResponseMessage resposta;
         
-        ListaDeReferencias resposta = new ListaDeReferencias();
-
-        for (int i = 0; i < 15; i++){
-            ReferenciaBibliografica ref = new ReferenciaBibliografica();
-            ref.setSerialno(i+1);
-            ref.setTitulo("Titulo Obra " + (i+1) );
-            ref.setAutoria(("David Britto Jr"));
-            ref.setPalchave("web programming");
-            ref.setVeiculo("livro");
-            ref.setDataPublicacao("2016-06-24 11:06:13");
-            resposta.add(ref);
+        try {
+            SearchDAO search = new SearchDAO();
+//            search.getBookByQuery(sq);
+            lista.setListaReferencias(search.getBookByQuery(sq));
+            resposta = new SearchResponseMessage(true,"",lista);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            resposta = new SearchResponseMessage(false,"Falha na comunicação com o banco de dados",lista);
         }
-        
+        System.out.println("Enviando resposta:");
+        System.out.println(resposta.toString());
         return resposta.toString();
     }
     
     private String create(JsonObject obj) {
         
         ReferenciaBibliografica ref = new ReferenciaBibliografica(obj);
-        
+        ResponseMessage resposta;
         try {
             CatalogDAO catalog = new CatalogDAO();
             catalog.create(ref);
+            resposta = new CreateResponseMessage(true,"Patrimonio " + ref.getSerialno() + " criado.",ref.getSerialno());
         } catch(SQLException e) {
             e.printStackTrace();
+            resposta = new CreateResponseMessage(false,"Falha na comunicação com o banco de dados.",ref.getSerialno());
         }
         
-        return (new CreateResponseMessage(true,"Patrimonio " + ref.getSerialno() + " criado.",ref.getSerialno())).toString();
+        return resposta.toString();
     }
     
     private String update(JsonObject obj){
-        return "";
+        System.out.println("Controller.updtae called");
+        ReferenciaBibliografica ref = new ReferenciaBibliografica(obj);
+        ResponseMessage resposta;
+        try {
+            CatalogDAO catalog = new CatalogDAO();
+            catalog.update(ref);
+            resposta = new ResponseMessage(true,"Patrimonio " + ref.getSerialno() + " atualizado com sucesso");
+        } catch (SQLException e) {
+            resposta = new ResponseMessage(false,"Falha na comunicação com o banco de dados.");
+        }
+        return resposta.toString();
     }
     
     private String remove(JsonObject obj) {
         
         System.out.println("Controller.remove called!");
         ReferenciaBibliografica ref = new ReferenciaBibliografica(obj);
-        
+        ResponseMessage resposta;
         try {
             CatalogDAO catalog = new CatalogDAO();
             System.out.println("Calling CatalogDAO.remove");
             catalog.remove(ref);
+            resposta = new ResponseMessage(true, "Patrimonio " + ref.getSerialno() + " removida com sucesso.");
         } catch (SQLException e) {
             e.printStackTrace();
+            resposta = new ResponseMessage(false,"Falha na comunicação com o banco de dados.");
         }
         
-        return (new ResponseMessage(true, "Patrimonio " + ref.getSerialno() + " removida com sucesso.")).toString();
+        return resposta.toString();
     }
     
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)

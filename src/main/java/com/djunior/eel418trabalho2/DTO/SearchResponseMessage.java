@@ -15,6 +15,19 @@ import javax.json.JsonObject;
 public class SearchResponseMessage extends ResponseMessage {
     private ListaDeReferencias listRef;
     
+    public SearchResponseMessage() {
+        
+    }
+    
+    public SearchResponseMessage(Boolean b, String m) {
+        super(b,m);
+    }
+    
+    public SearchResponseMessage(Boolean b, String m, ListaDeReferencias l) {
+        super(b,m);
+        listRef = l;
+    }
+    
     public void setListaDeReferencias(ListaDeReferencias l){
         listRef = l;
     }

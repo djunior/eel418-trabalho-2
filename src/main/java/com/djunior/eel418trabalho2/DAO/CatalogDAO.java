@@ -49,7 +49,7 @@ public class CatalogDAO extends BaseDAO {
 
             rst = pstmt.executeQuery();
             rst.next();
-            book.setSerialno(rst.getInt("patrimonio"));
+            book.setSerialno(rst.getLong("patrimonio"));
 
             String[] titleFragments = Utils.removeDiacriticals(book.getTitulo()).split(" ");
             for (String fragment : titleFragments) {
@@ -98,35 +98,79 @@ public class CatalogDAO extends BaseDAO {
     public void update(ReferenciaBibliografica book) throws SQLException{
         Connection con = null;
         PreparedStatement pstmt = null;
-        PreparedStatement prepStatement = null;
+        PreparedStatement pstmt_title = null;
+        PreparedStatement pstmt_author = null;
+        PreparedStatement pstmt_veiculo = null;
+        PreparedStatement pstmt_palchave = null;
         
         try {
             con = getConnection();
             
-            pstmt = con.prepareStatement("UPDATE referencias"
-                                      + " SET titulo=?,autoria=?"
-                                      + " WHERE serialno=?;"
-                                      + " DELETE FROM palavrasdotitulo"
-                                      + " WHERE serialno_referencias=?;");
+            pstmt = con.prepareStatement("UPDATE dadoscatalogo"
+                                      + " SET titulo=?,autoria=?,veiculo=?,data_publicacao=?"
+                                      + " WHERE patrimonio=?;"
+                                      + " DELETE FROM palavrastitulonormal"
+                                      + " WHERE patrimonio=?;"
+                                      + " DELETE FROM palavrasautorianormal"
+                                      + " WHERE patrimonio=?;"
+                                      + " DELETE FROM palavrasveiculonormal"
+                                      + " WHERE patrimonio=?;"
+                                      + " DELETE FROM palavras_chave"
+                                      + " WHERE patrimonio=?");
             
             pstmt.setString(1, book.getTitulo());
             pstmt.setString(2, book.getAutoria());
-            pstmt.setLong(3, book.getSerialno());
-            pstmt.setLong(4, book.getSerialno());
+            pstmt.setString(3, book.getVeiculo());
+            pstmt.setString(4, book.getDataPublicacao());
+            pstmt.setLong(5, book.getSerialno());
+            pstmt.setLong(6, book.getSerialno());
+            pstmt.setLong(7, book.getSerialno());
+            pstmt.setLong(8, book.getSerialno());
+            pstmt.setLong(9, book.getSerialno());
             
             pstmt.execute();
             
+
             String[] titleFragments = Utils.removeDiacriticals(book.getTitulo()).split(" ");
             for (String fragment : titleFragments) {
-                prepStatement = con.prepareStatement("INSERT INTO palavrasdotitulo (palavra,serialno_referencias) VALUES (?,?) RETURNING serialno;");
-                prepStatement.setString(1, fragment);
-                prepStatement.setLong(2, book.getSerialno());
-                prepStatement.executeQuery();
+                pstmt_title = con.prepareStatement("INSERT INTO palavrastitulonormal (palavra_titulo_normal,patrimonio) VALUES (?,?) RETURNING serialpaltitulo;");
+                pstmt_title.setString(1, fragment);
+                pstmt_title.setLong(2, book.getSerialno());
+                pstmt_title.executeQuery();
+                pstmt_title.close();
             }
+            
+            String[] authorFragments = Utils.removeDiacriticals(book.getAutoria()).split(" ");
+            for (String fragment : authorFragments) {
+                pstmt_author = con.prepareStatement("INSERT INTO palavrasautorianormal (palavra_autoria_normal,patrimonio) VALUES (?,?) RETURNING serialpalautoria;");
+                pstmt_author.setString(1, fragment);
+                pstmt_author.setLong(2, book.getSerialno());
+                pstmt_author.executeQuery();
+                pstmt_author.close();
+            }
+
+            String[] veiculoFragments = Utils.removeDiacriticals(book.getVeiculo()).split(" ");
+            for (String fragment : veiculoFragments) {
+                pstmt_veiculo = con.prepareStatement("INSERT INTO palavrasveiculonormal (palavra_veiculo_normal,patrimonio) VALUES (?,?) RETURNING serialpalveiculo;");
+                pstmt_veiculo.setString(1, fragment);
+                pstmt_veiculo.setLong(2, book.getSerialno());
+                pstmt_veiculo.executeQuery();
+                pstmt_veiculo.close();
+            }
+            
+            pstmt_palchave = con.prepareStatement("INSERT INTO palavras_chave (palchave,patrimonio,palchavenormal) VALUES(?,?,?) RETURNING serialpalchave;");
+            pstmt_palchave.setString(1, book.getPalchave());
+            pstmt_palchave.setLong(2, book.getSerialno());
+            pstmt_palchave.setString(3, Utils.removeDiacriticals((book.getPalchave())));
+            pstmt_palchave.executeQuery();
+
         
         } finally {
             try { pstmt.close(); } catch(Exception e) {}
-            try { prepStatement.close(); } catch(Exception e) {}
+            try { pstmt_title.close(); } catch(Exception e) {}
+            try { pstmt_author.close(); } catch(Exception e) {}
+            try { pstmt_veiculo.close(); } catch(Exception e) {}
+            try { pstmt_palchave.close(); } catch(Exception e) {}
             try { con.close(); } catch(Exception e) {}
         }
     }
