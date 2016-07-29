@@ -6,28 +6,31 @@
 
         <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 
-        <link rel="stylesheet" href="css/bibliopdf.css" type="text/css"/>
+        <link rel="stylesheet" href="protegido/css/bibliopdf.css" type="text/css"/>
 
-        <script type="text/javascript" src="js/bibliopdf.js"></script>
+        <script type="text/javascript" src="protegido/js/jquery-1.11.1.min.js"></script>
+        <script type="text/javascript" src="protegido/js/bibliopdf.js"></script>
     </head>
 
     <body>
         <div id="idLoading"></div>
 
         <div id="idDivCabecalho">
-            <span id="idLabel1">Segundo Trabalho 2016-1</span><br>
-                <div id="menuEntrar"  class="Menu">
-                    ENTRAR
-                </div>
-                <div id="menuSair"  class="Menu">
-                    SAIR
-                </div>
-                <div id="menuCatalogacao"  class="Menu">
-                    CATALOGAÇÃO
-                </div>
-                <div id="menuBusca"  class="Menu">
-                    BUSCA
-                </div>
+            <div id="menuEntrar"  class="Menu">
+                ENTRAR
+            </div>
+            <div id="menuSair"  class="Menu">
+                SAIR
+            </div>
+            <div id="menuCatalogacao"  class="Menu">
+                CATALOGAÇÃO
+            </div>
+            <div id="menuBusca"  class="Menu">
+                BUSCA
+            </div>
+            <div id="idLabel1">
+                Terceiro Trabalho 2016-1
+            </div>
         </div>
 
         <!--==========================================================================-->
@@ -305,6 +308,18 @@
                     </td>
                     <td>
                     </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td style="text-align:center;">
+                        <form id="idFormUpload">
+                            <input type="hidden" id="idUploadPatrimonio" name="upload_patrimonio"/>
+                            <input type="button" id="idSubirArquivo" value="SUBIR ARQUIVO"
+                                   style="width:150px;"/>
+                            <input type="file" name="fileUpload" id="idNomeArqUpload"/>
+                        </form>
+                    </td>
+                    <td></td>
                 </tr>
             </table>
         </div>

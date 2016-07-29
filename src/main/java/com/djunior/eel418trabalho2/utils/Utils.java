@@ -10,5 +10,13 @@ public class Utils {
         final String decomposed = Normalizer.normalize(input, Normalizer.Form.NFD);
         return decomposed.replaceAll("\\p{InCombiningDiacriticalMarks}+", "").replaceAll("[,.:;'\"\n\t?!{}()/ ]+", " ");
     }
+    
+    public static String fixTimestamp(String str) {
+        if (str.matches("\\d{4}-\\d{2}-\\d{2}"))
+            str += " 00:00:00";
+        else if (str.matches("\\d{4}"))
+            str += "-01-01 00:00:00";
+        return str;
+    }
 //------------------------------------------------------------------------------    
 }

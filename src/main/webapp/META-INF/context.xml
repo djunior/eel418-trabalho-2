@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Context path="/eel418-trabalho-2">
+<Context antiJARLocking="true" path="/eel418-trabalho-2">
     <Resource auth="Container" 
               driverClassName="org.postgresql.Driver" 
               logAbandoned="false" 
@@ -7,10 +7,41 @@
               maxIdle="100" 
               maxWait="-1" 
               name="jdbc/bibliopdf" 
+              username="postgres"
               password="123456" 
               removeAbandoned="true" 
               removeAbandonedTimeout="60" 
               type="javax.sql.DataSource" 
               url="jdbc:postgresql://127.0.0.1:5432/bibliopdf" 
-              username="postgres"/>
+    />
+    
+    <Resource 
+      name="jdbc/authority"
+      url="jdbc:postgresql://127.0.0.1:5432/usuariossenhas"
+      username="postgres"
+      password="123456"
+
+      auth="Container"
+      driverClassName="org.postgresql.Driver"
+      logAbandoned="false"
+      maxActive="20"
+      maxIdle="10"
+      maxWait="-1"
+      removeAbandoned="true"
+      removeAbandonedTimeout="60"
+      type="javax.sql.DataSource"
+    />
+    
+    <Realm 
+      name="eel418-trabalho-2"  
+      debug="99"
+      localDataSource="true"
+      className="org.apache.catalina.realm.DataSourceRealm"
+      dataSourceName="jdbc/authority"
+      userTable="usuarios" 
+      userNameCol="usuario" 
+      userCredCol="senha"
+      userRoleTable="grupos" 
+      roleNameCol="grupo"
+    />
 </Context>

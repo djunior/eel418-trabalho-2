@@ -13,7 +13,7 @@ function doAjaxRequest(action,jsonObject,callback){
     console.log("doAjaxRequest called!");
     var stringJSON = JSON.stringify(jsonObject);
     var ajaxRequestObj = new XMLHttpRequest();
-    ajaxRequestObj.open("POST", "controller?action="+action);
+    ajaxRequestObj.open("POST", "rest/"+action);
     ajaxRequestObj.setRequestHeader("Content-Type","application/json;charset=UTF-8");
     
     // Prepara recebimento da resposta: tipo da resposta JSON!
@@ -39,6 +39,8 @@ function ReferenciaBibliografica() {
     this.veiculo = document.getElementById("idveiculo3").value;
     this.dataPublicacao = document.getElementById("iddatapublicacao3").value;
     this.palchave = document.getElementById("idpalchave3").value;
+    this.fileName = "";
+    this.filePath = "";
 };
 
 function SearchQuery() {
@@ -109,14 +111,13 @@ var clearResultList = function() {
 };
 
 var showResultsForPage = function (index) {
-    console.log("1");
     var aux = resultadosBusca;
     clearResultList();
     resultadosBusca = aux;
     
     currentPage = index;
     document.getElementById("idPaginaDestino").value = index + 1;
-    console.log("2");
+
     tabelaResultados = document.getElementById("idTabelaResultados");
     tabelaResultados.style.display = resultadosBusca.length > 0 ? "table" :  "none";
     
@@ -124,25 +125,36 @@ var showResultsForPage = function (index) {
     var initialIndex = currentPage * resultsPerPage;
     var finalIndex = (currentPage+1) * resultsPerPage;
     if (finalIndex > resultadosBusca.length) finalIndex = resultadosBusca.length;
-    console.log("4");
-    console.log("initialIndex: " + initialIndex);
-    console.log("finalIndex: " + finalIndex);
+
     for (i = initialIndex; i < finalIndex; i++) {
         var ref = resultadosBusca[i];
-        console.log("Adicionando link para a entrada: "+ref.titulo + " - " + ref.autoria);
-        var link = document.createElement("a");
-        link.setAttribute("class","result");
-        link.setAttribute("href","#");
-        link.setAttribute("onclick","loadCatalogForReference(" + i + ");");
+        var autor = ref.autoria;
+        if (!autor || 0 === autor.length)
+            autor = "Autor desconhecido";
+        console.log("Adicionando link para a entrada: "+ref.titulo + " - " + autor);
+        var link_texto = document.createElement("a");
+        var link_img = document.createElement("a");
         
-        var node = document.createTextNode(ref.titulo + " - " + ref.autoria);
-        link.appendChild(node);
+        link_texto.setAttribute("class","result");
+        link_texto.setAttribute("href","#");
+        link_texto.setAttribute("onclick","viewFile(" + i + ");");
         
-        link.appendChild(document.createElement("br"));
+        link_img.setAttribute("class","result");
+        link_img.setAttribute("href","#");
+        link_img.setAttribute("onclick","loadCatalogForReference(" + i + ");");
         
-        tabelaResultados.appendChild(link);
+        var node = document.createTextNode(ref.serialno + ". " + ref.titulo + " - " + autor);
+        link_texto.appendChild(node);
+        
+        var imagem = document.createElement("img");
+        imagem.setAttribute("src", "protegido/Pencil_striped_symbol_for_interface_edit_buttons_24.png");
+        imagem.setAttribute("width", "20");
+        link_img.appendChild(imagem);
+        
+        tabelaResultados.appendChild(link_texto);
+        tabelaResultados.appendChild(link_img);
+        tabelaResultados.appendChild(document.createElement("br"));
     }
-    console.log("5");
 };
 
 var showPreviousPage = function () {
@@ -218,7 +230,7 @@ var onCreateResult = function (result) {
 
 var create = function () {
     var requestObj = new ReferenciaBibliografica();
-    doAjaxRequest("create",requestObj,onCreateResult);
+    doAjaxRequest("catalog/create",requestObj,onCreateResult);
 };
 
 var onRemoveResult = function (result) {
@@ -228,7 +240,7 @@ var onRemoveResult = function (result) {
 
 var remove = function () {
     var requestObj = new ReferenciaBibliografica();
-    doAjaxRequest("remove",requestObj,onRemoveResult);
+    doAjaxRequest("catalog/remove",requestObj,onRemoveResult);
 };
 
 var onUpdateResult = function(result) {
@@ -237,7 +249,7 @@ var onUpdateResult = function(result) {
 
 var update = function () {
   var requestObj = new ReferenciaBibliografica();
-  doAjaxRequest("update",requestObj,onUpdateResult);
+  doAjaxRequest("catalog/update",requestObj,onUpdateResult);
 };
 
 var loadCatalogForReference = function (index) {
@@ -255,6 +267,8 @@ var loadCatalogForReference = function (index) {
 };
 
 var goToSearch = function () {
+    setSearchMessage("");
+    
     document.getElementById("menuCatalogacao").style.display = "initial";
     document.getElementById("menuSair").style.display = "initial";
     document.getElementById("menuEntrar").style.display = "none";
@@ -274,6 +288,8 @@ var goToSearch = function () {
 };
 
 var goToCatalog = function (){
+    setCatalogMessage("");
+    
     document.getElementById("menuCatalogacao").style.display = "none";
     document.getElementById("menuSair").style.display = "initial";
     document.getElementById("menuEntrar").style.display = "none";
@@ -301,15 +317,65 @@ var showPreviousSearchResult = function () {
         loadCatalogForReference(resultadosBuscaIndex-1);
 };
 
+var uploadFile = function (data, callback) {
+    console.log("uploadFile!");
+    $.ajax(
+            {
+                type: 'POST',
+                url: 'rest/upload',
+                data: data,
+                dataType: 'text',
+                cache: false,
+                async: true,
+                processData: false,
+                contentType: false, 
+                success: function (data) {
+                    onUpload(JSON.parse(data));
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    setCatalogMessage("Falha ao enviar o arquivo para o servidor. Erro: " + thrownError);
+                }
+            }
+    );
+};
+
+var onUpload = function (result) {
+    console.log("Result.message: " + result.message);
+    setCatalogMessage(result.message);
+};
+
+var upload = function () {
+    console.log("Uploading file!");
+    document.getElementById("idUploadPatrimonio").value = document.getElementById("idpatrimonio3").value;
+    var data = new FormData($('#idFormUpload')[0]);
+    uploadFile(data,onUpload);
+};
+
+var viewFile = function (index) {
+    var ref = resultadosBusca[index];
+    console.log("File Path:" + ref.fileName);
+    if (ref && ref.fileName.length > 0)
+        window.open(
+            "arquivos/" + ref.serialno,
+            '_blank'
+        );
+    else
+        setSearchMessage("Não há arquivo para o patrimônio " + ref.serialno);
+};
+
+var download = function () {
+    var ref = resultadosBusca[resultadosBuscaIndex];
+    if (ref && ref.fileName.length > 0)
+        window.open(
+            "arquivos/" + ref.serialno,
+            'Download'
+        );
+    else
+        setCatalogMessage("Não há arquivo para o patrimônio " + ref.serialno);
+};
+
 var logout = function () {
-    document.getElementById("menuEntrar").style.display = "initial";
-    document.getElementById("menuCatalogacao").style.display = "none";
-    document.getElementById("menuBusca").style.display = "none";
-    document.getElementById("menuSair").style.display = "none";
-    
-    document.getElementById("idDivLogin").style.display = "initial";
-    document.getElementById("idDivBusca").style.display = "none";
-    document.getElementById("idDivCatalogacao").style.display = "none";
+    window.location = "logout";
 };
 
 var onload = function () {
@@ -335,6 +401,8 @@ var onload = function () {
     document.getElementById("idItemProximo").onclick = showNextSearchResult;
     document.getElementById("idPagAnterior").onclick = showPreviousPage;
     document.getElementById("idPagProxima").onclick = showNextPage;
+    document.getElementById("idSubirArquivo").onclick = upload;
+    document.getElementById("idDownload").onclick = download;
     
     var ControleDeChecks = function () {
         this.patrimonio = document.getElementById('idcheckpatrimonio');
@@ -415,6 +483,7 @@ var onload = function () {
     };
     
     setNumberOfResults(0);
+    goToSearch();
 };
 
 window.onload(onload);

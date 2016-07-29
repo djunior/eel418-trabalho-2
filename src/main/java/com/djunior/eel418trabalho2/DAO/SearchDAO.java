@@ -12,6 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 /**
@@ -26,13 +27,15 @@ public class SearchDAO extends BaseDAO {
     
     private ReferenciaBibliografica createBookData(ResultSet rst){
         ReferenciaBibliografica book = new ReferenciaBibliografica();
-        try{
+        try{            
             book.setSerialno(rst.getLong("patrimonio"));
             book.setTitulo(rst.getString("titulo"));
             book.setAutoria(rst.getString("autoria"));
             book.setVeiculo(rst.getString("veiculo"));
             book.setDataPublicacao(rst.getString("data_publicacao"));
             book.setPalchave(rst.getString("palchave"));
+            book.setFilePath(rst.getString("nomearquivo"));
+            book.setFileName(rst.getString("nomeoriginalarquivo"));
             System.out.println("Livro criado: " + book.toString());
         } catch(Exception e){
             e.printStackTrace();
@@ -42,9 +45,9 @@ public class SearchDAO extends BaseDAO {
     
     private String createQuery(SearchQuery sq) {
         String q = 
-        "SELECT T1.patrimonio, T1.titulo, T1.autoria, T1.veiculo, T1.data_publicacao, T2.palchave, (count(*)) AS nrohits \n" +
+        "SELECT T1.patrimonio, T1.titulo, T1.autoria, T1.veiculo, T1.data_publicacao, T1.nomearquivo, T1.nomeoriginalarquivo, T2.palchave, (count(*)) AS nrohits \n" +
         "FROM dadoscatalogo T1 \n" +
-        "INNER JOIN palavras_chave T2 ON (T1.patrimonio = T2.patrimonio) \n";
+        "LEFT JOIN palavras_chave T2 ON (T1.patrimonio = T2.patrimonio) \n";
         
         if (sq.getPatrimonio().isActive()) {
             q = q + "WHERE T1.patrimonio = '" + sq.getPatrimonio().getValue() + "'";
@@ -55,8 +58,13 @@ public class SearchDAO extends BaseDAO {
             Boolean firstOr = true;
             
             if (sq.getPalchave().isActive()){
-                String palavrasDaBusca = sq.getPalchave().getCleanValue();
-                String comando = "T2.palchavenormal LIKE '" + palavrasDaBusca + "' ";
+                String[] palavrasDaBusca = sq.getPalchave().getValue().split(";");
+                String comando = "(";
+                for (int i = 0; i < palavrasDaBusca.length; i++) {
+                    comando = comando + "T2.palchavenormal LIKE '" + Utils.removeDiacriticals(palavrasDaBusca[i]) + "' ";
+                    if (i < (palavrasDaBusca.length-1)) comando = comando + " OR ";
+                }
+                comando = comando + ")";
                 
                 if (sq.getPalchave().getOperation().equals("and")){
                     if (firstAnd) firstAnd = false; else searchFieldsAnd = searchFieldsAnd + " AND ";
@@ -69,7 +77,7 @@ public class SearchDAO extends BaseDAO {
             }
             
             if (sq.getTitulo().isActive()){
-                q = q + "INNER JOIN palavrastitulonormal T3 ON(T1.patrimonio = T3.patrimonio) \n";
+                q = q + "LEFT JOIN palavrastitulonormal T3 ON (T1.patrimonio = T3.patrimonio) \n";
                 String[] palavrasDaBusca = sq.getTitulo().getCleanValue().split(" ");
                 String comando = "(";
                 for (int i=0; i < palavrasDaBusca.length; i++) {
@@ -88,7 +96,7 @@ public class SearchDAO extends BaseDAO {
             }
             
             if (sq.getAutoria().isActive()){
-                q = q + "INNER JOIN palavrasautorianormal T4 ON(T1.patrimonio = T4.patrimonio) \n";
+                q = q + "LEFT JOIN palavrasautorianormal T4 ON (T1.patrimonio = T4.patrimonio) \n";
                 String[] palavrasDaBusca = sq.getAutoria().getCleanValue().split(" ");
                 String comando = "(";
                 for (int i=0; i < palavrasDaBusca.length; i++) {
@@ -107,7 +115,7 @@ public class SearchDAO extends BaseDAO {
             }
             
             if (sq.getVeiculo().isActive()){
-                q = q + "INNER JOIN palavrasveiculonormal T5 ON(T1.patrimonio = T5.patrimonio) \n";
+                q = q + "LEFT JOIN palavrasveiculonormal T5 ON (T1.patrimonio = T5.patrimonio) \n";
                 String[] palavrasDaBusca = sq.getVeiculo().getCleanValue().split(" ");
                 String comando = "(";
                 for (int i=0; i < palavrasDaBusca.length; i++) {
@@ -128,7 +136,8 @@ public class SearchDAO extends BaseDAO {
             if (sq.getDataInicial().isActive()) {
                 String comando = "";
                 if (! sq.getDataInicial().getValue().equals("")) {
-                    comando = "T1.data_publicacao > '" + sq.getDataInicial().getValue() + "' ";
+                    Timestamp t = Timestamp.valueOf(Utils.fixTimestamp(sq.getDataInicial().getValue()));
+                    comando = "T1.data_publicacao >= '" + t + "' ";
 
                     if (sq.getDataInicial().getOperation().equals("and")){
                         if (firstAnd) firstAnd = false; else searchFieldsAnd = searchFieldsAnd + " AND ";
@@ -144,7 +153,8 @@ public class SearchDAO extends BaseDAO {
             if (sq.getDataFinal().isActive()) {
                 String comando = "";
                 if (! sq.getDataFinal().getValue().equals(""))  {
-                    comando = "T1.data_publicacao < '" + sq.getDataFinal().getValue() + "' ";
+                    Timestamp t = Timestamp.valueOf(Utils.fixTimestamp(sq.getDataFinal().getValue()));
+                    comando = "T1.data_publicacao <= '" + t + "' ";
                 
                     if (sq.getDataFinal().getOperation().equals("and")){
                         if (firstAnd) firstAnd = false; else searchFieldsAnd = searchFieldsAnd + " AND ";
@@ -170,7 +180,7 @@ public class SearchDAO extends BaseDAO {
         
         String finalSelectExterno = 
         " GROUP BY T1.patrimonio, T1.titulo, T1.autoria, T1.veiculo, T1.data_publicacao, T2.palchave ORDER BY nrohits DESC, titulo ASC;";
-        
+
         return q + finalSelectExterno;
     }
     
